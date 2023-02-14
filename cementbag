@@ -1,0 +1,47 @@
+import torch
+import cv2
+
+# Load YOLOv5 model
+model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+
+# Load video
+cap = cv2.VideoCapture('/Users/kanishk/Desktop/vid_23.mp4')
+
+# Define codec and output video file
+fourcc = cv2.VideoWriter_fourcc(*'mp4')
+out = cv2.VideoWriter('output.mp4', fourcc, 25.0, (640, 480))
+
+# Loop through each frame
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+        
+    # Run inference
+    results = model(frame)
+    
+    # Extract cement bag predictions
+    cement_bags = results.pandas().xyxy[results.pandas().xyxy['name'] == 'cement bag']
+    
+    # Visualize predictions
+    for index, bag in cement_bags.iterrows():
+        xmin = int(bag['xmin'])
+        ymin = int(bag['ymin'])
+        xmax = int(bag['xmax'])
+        ymax = int(bag['ymax'])
+        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
+        
+    # Write frame to output video
+    out.write(frame)
+    
+    # Display frame
+    cv2.imshow('Cement Bag Detection', frame)
+    
+    # Exit on 'q' key press
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+        
+# Release resources
+cap.release()
+out.release()
+cv2.destroyAllWindows()
